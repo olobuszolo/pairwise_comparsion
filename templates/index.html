@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AHP Web Application</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1 class="mt-5">AHP Web Application</h1>
+    <div class="mt-4">
+        <h3>Load Model from File</h3>
+        <input type="file" id="loadFile" class="form-control">
+        <button class="btn btn-primary mt-2" onclick="loadModel()">Load Model</button>
+    </div>
+    <div class="mt-4">
+        <h3>Add Alternative</h3>
+        <input type="text" id="alternativeName" class="form-control" placeholder="Enter alternative name">
+        <button class="btn btn-primary mt-2" onclick="addAlternative()">Add Alternative</button>
+    </div>
+    <div class="mt-4">
+        <h3>Add Criterion</h3>
+        <input type="text" id="criterionName" class="form-control" placeholder="Enter criterion name">
+        <button class="btn btn-primary mt-2" onclick="addCriterion()">Add Criterion</button>
+    </div>
+    <div class="mt-4">
+        <h3>Add Expert Matrix</h3>
+        <input type="text" id="expertName" class="form-control" placeholder="Enter expert name">
+        <input type="text" id="criterion" class="form-control mt-2" placeholder="Enter criterion">
+        <textarea id="matrix" class="form-control mt-2" placeholder="Enter matrix as JSON (e.g., [[1, 2], [0.5, 1]])"></textarea>
+        <button class="btn btn-primary mt-2" onclick="addExpertMatrix()">Add Expert Matrix</button>
+    </div>
+    <div class="mt-4">
+        <h3>Calculate Final Ranking</h3>
+        <button class="btn btn-success" onclick="calculateFinalRanking()">Calculate</button>
+        <div id="rankingResult" class="mt-3"></div>
+    </div>
+</div>
+
+<script>
+    function addAlternative() {
+        const alternativeName = $('#alternativeName').val();
+        $.ajax({
+            url: '/add_alternative',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ alternative_name: alternativeName }),
+            success: function(response) {
+                alert(response.message);
+            },
+            error: function(response) {
+                alert(response.responseJSON.error);
+            }
+        });
+    }
+
+    function addCriterion() {
+        const criterionName = $('#criterionName').val();
+        $.ajax({
+            url: '/add_criterion',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ criterion_name: criterionName }),
+            success: function(response) {
+                alert(response.message);
+            },
+            error: function(response) {
+                alert(response.responseJSON.error);
+            }
+        });
+    }
+
+    function addExpertMatrix() {
+        const expertName = $('#expertName').val();
+        const criterion = $('#criterion').val();
+        const matrix = JSON.parse($('#matrix').val());
+        $.ajax({
+            url: '/add_expert_matrix',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ expert_name: expertName, criterion: criterion, matrix: matrix }),
+            success: function(response) {
+                alert(response.message);
+            },
+            error: function(response) {
+                alert(response.responseJSON.error);
+            }
+        });
+    }
+
+    function calculateFinalRanking() {
+    $.ajax({
+        url: '/calculate_final_ranking',
+        type: 'GET',
+        success: function(response) {
+            let rankingText = 'Final Ranking:\n';
+            response.ranking.forEach((item) => {
+                rankingText += `${item.alternative}: ${item.score}\n`;
+            });
+            $('#rankingResult').text(rankingText);
+        },
+        error: function(response) {
+            alert(response.responseJSON.error);
+        }
+    });
+    }
+    function loadModel() {
+    const fileInput = document.getElementById('loadFile');
+    if (fileInput.files.length === 0) {
+        alert('Please select a file to load.');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const content = event.target.result;
+        $.ajax({
+            url: '/load',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ content: content }),
+            success: function(response) {
+                alert(response.message);
+            },
+            error: function(response) {
+                alert(response.responseJSON.error);
+            }
+        });
+    };
+    reader.readAsText(file);
+}
+
+
+
+</script>
+</body>
+</html>
