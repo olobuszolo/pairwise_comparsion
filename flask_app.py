@@ -1,19 +1,17 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 import numpy as np
 import json
-from AHPModel import AHPModel  # Importujemy model AHP
+from AHPModel import AHPModel
+import io
 
 app = Flask(__name__)
 
-# Inicjalizacja modelu AHP
 ahp = AHPModel()
 
-# Strona główna aplikacji
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# Dodawanie alternatywy
 @app.route('/add_alternative', methods=['POST'])
 def add_alternative():
     data = request.json
@@ -23,7 +21,6 @@ def add_alternative():
         return jsonify({'message': 'Alternative added successfully'}), 200
     return jsonify({'error': 'No alternative name provided'}), 400
 
-# Dodawanie kryterium
 @app.route('/add_criterion', methods=['POST'])
 def add_criterion():
     data = request.json
@@ -33,7 +30,6 @@ def add_criterion():
         return jsonify({'message': 'Criterion added successfully'}), 200
     return jsonify({'error': 'No criterion name provided'}), 400
 
-# Dodawanie macierzy porównań eksperta
 @app.route('/add_expert_matrix', methods=['POST'])
 def add_expert_matrix():
     data = request.json
@@ -49,7 +45,6 @@ def add_expert_matrix():
             return jsonify({'error': str(e)}), 400
     return jsonify({'error': 'Missing data for expert name, criterion or matrix'}), 400
 
-# Obliczanie rankingu końcowego
 @app.route('/calculate_final_ranking', methods=['GET'])
 def calculate_final_ranking():
     try:
@@ -59,28 +54,54 @@ def calculate_final_ranking():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-
-# Zapis do pliku
-@app.route('/save', methods=['POST'])
-def save_to_file():
-    data = request.json
-    filename = data.get('filename', 'ahp_model.json')
+@app.route('/download_model', methods=['GET'])
+def download_model():
     try:
-        ahp.save_to_file(filename)
-        return jsonify({'message': 'Model saved successfully'}), 200
+        filename = request.args.get('filename', 'ahp_model.json')
+        data = {
+            'alternatives': ahp.alternatives,
+            'criteria': ahp.criteria,
+            'expert_matrices': {
+                expert: {
+                    criterion: matrix.tolist()
+                    for criterion, matrix in matrices.items()
+                }
+                for expert, matrices in ahp.expert_matrices.items()
+            }
+        }
+        file_stream = io.StringIO()
+        json.dump(data, file_stream, indent=4)
+        file_stream.seek(0)
+
+        return send_file(
+            io.BytesIO(file_stream.getvalue().encode()),
+            mimetype='application/json',
+            as_attachment=True,
+            download_name=filename
+        )
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-# Odczyt z pliku
-@app.route('/load', methods=['POST'])
-def load_from_file():
-    data = request.json
-    filename = data.get('filename', 'ahp_model.json')
-    try:
-        ahp.load_from_file(filename)
-        return jsonify({'message': 'Model loaded successfully'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+
+@app.route('/upload_model', methods=['POST'])
+def upload_model():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    if file and file.filename.endswith('.json'):
+        try:
+            content = json.load(file)
+            ahp.load_from_file(content)
+            return jsonify({'message': 'Model parameters uploaded successfully'}), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 400
+
+    return jsonify({'error': 'Invalid file type, only JSON allowed'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)

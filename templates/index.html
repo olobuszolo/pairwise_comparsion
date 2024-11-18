@@ -12,10 +12,15 @@
 <div class="container">
     <h1 class="mt-5">AHP Web Application</h1>
     <div class="mt-4">
-        <h3>Load Model from File</h3>
-        <input type="file" id="loadFile" class="form-control">
-        <button class="btn btn-primary mt-2" onclick="loadModel()">Load Model</button>
+        <h3>Upload Model Parameters</h3>
+        <input type="file" id="modelFile" class="form-control">
+        <button class="btn btn-primary mt-2" onclick="uploadModel()">Upload</button>
     </div>
+    <div class="mt-4">
+        <h3>Download Model</h3>
+        <input type="text" id="downloadFileName" class="form-control" placeholder="Enter filename (e.g., ahp_model.json)">
+        <button class="btn btn-success mt-2" onclick="downloadModel()">Download</button>
+    </div> 
     <div class="mt-4">
         <h3>Add Alternative</h3>
         <input type="text" id="alternativeName" class="form-control" placeholder="Enter alternative name">
@@ -90,52 +95,54 @@
             }
         });
     }
-
     function calculateFinalRanking() {
     $.ajax({
         url: '/calculate_final_ranking',
         type: 'GET',
         success: function(response) {
-            let rankingText = 'Final Ranking:\n';
+            let rankingHTML = '<ul class="list-group">';
             response.ranking.forEach((item) => {
-                rankingText += `${item.alternative}: ${item.score}\n`;
+                rankingHTML += `<li class="list-group-item">${item.alternative}: ${item.score.toFixed(2)}</li>`;
             });
-            $('#rankingResult').text(rankingText);
+            rankingHTML += '</ul>';
+            $('#rankingResult').html(rankingHTML);
         },
         error: function(response) {
             alert(response.responseJSON.error);
         }
     });
-    }
-    function loadModel() {
-    const fileInput = document.getElementById('loadFile');
-    if (fileInput.files.length === 0) {
-        alert('Please select a file to load.');
+}
+
+function uploadModel() {
+    const fileInput = document.getElementById('modelFile');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert('Please select a file first.');
         return;
     }
 
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        const content = event.target.result;
-        $.ajax({
-            url: '/load',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ content: content }),
-            success: function(response) {
-                alert(response.message);
-            },
-            error: function(response) {
-                alert(response.responseJSON.error);
-            }
-        });
-    };
-    reader.readAsText(file);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    $.ajax({
+        url: '/upload_model',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            alert(response.message);
+        },
+        error: function(response) {
+            alert(response.responseJSON.error);
+        }
+    });
 }
-
-
-
+function downloadModel() {
+    const filename = $('#downloadFileName').val() || 'ahp_model.json';
+    window.location.href = `/download_model?filename=${filename}`;
+}
 </script>
 </body>
 </html>
