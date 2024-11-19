@@ -46,7 +46,7 @@ class AHPModel:
             final_scores += weights
         final_ranking = final_scores / len(self.criteria)
 
-        return [(self.alternatives[i], score) for i, score in enumerate(final_ranking)]
+        return sorted([(self.alternatives[i], score) for i, score in enumerate(final_ranking)], key=lambda x: x[1], reverse=True)
 
     def save_to_file(self, filename):
         data = {
