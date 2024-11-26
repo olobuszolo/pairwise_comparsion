@@ -19,8 +19,56 @@ class AHPModel:
             return
         if expert_name not in self.expert_matrices:
             self.expert_matrices[expert_name] = {}
-        filled_matrix = self.fill_missing_values(np.array(matrix))
-        self.expert_matrices[expert_name][criterion] = filled_matrix
+
+        matrix = np.array(matrix)
+        n = matrix.shape[0]
+
+        # Zachowanie wartości 0
+        matrix[matrix == 0] = 0
+        matrix = self.fill_missing_values(matrix)
+
+        for i in range(n):
+            for j in range(n):
+                if i != j and not np.isnan(matrix[i, j]):
+                    if matrix[i, j] == 0:
+                        matrix[j, i] = 0
+                    else:
+                        if matrix[i, j] == 1:
+                            matrix[j, i] = 1
+                        elif matrix[i, j] == 2:
+                            matrix[j, i] = 0.5
+                        elif matrix[i, j] == 3:
+                            matrix[j, i] = 0.33
+                        elif matrix[i, j] == 4:
+                            matrix[j, i] = 0.25
+                        elif matrix[i, j] == 5:
+                            matrix[j, i] = 0.2
+                        elif matrix[i, j] == 6:
+                            matrix[j, i] = 0.17
+                        elif matrix[i, j] == 7:
+                            matrix[j, i] = 0.14
+                        elif matrix[i, j] == 8:
+                            matrix[j, i] = 0.12
+                        elif matrix[i, j] == 9:
+                            matrix[j, i] = 0.11
+                        elif matrix[i, j] == 0.5:
+                            matrix[j, i] = 2
+                        elif matrix[i, j] == 0.33:
+                            matrix[j, i] = 3
+                        elif matrix[i, j] == 0.25:
+                            matrix[j, i] = 4
+                        elif matrix[i, j] == 0.2:
+                            matrix[j, i] = 5
+                        elif matrix[j, i] == 0.17:
+                            matrix[j, i] = 6
+                        elif matrix[i, j] == 0.14:
+                            matrix[j, i] = 7
+                        elif matrix[i, j] == 0.13:
+                            matrix[j, i] = 8
+                        elif matrix[i, j] == 0.11:
+                            matrix[j, i] = 9
+
+        self.expert_matrices[expert_name][criterion] = matrix
 
 
     def calculate_inconsistency_index(self, matrix):
@@ -33,37 +81,52 @@ class AHPModel:
     def calculate_final_ranking_topsis(self):
         aggregated_matrices = {}
         for criterion in self.criteria:
-            matrices = [self.expert_matrices[expert][criterion] for expert in self.expert_matrices if criterion in self.expert_matrices[expert]]
+            matrices = [
+                self.expert_matrices[expert][criterion]
+                for expert in self.expert_matrices
+                if criterion in self.expert_matrices[expert]
+            ]
             aggregated_matrices[criterion] = sum(matrices) / len(matrices)
 
-        criterion_weights = []
         local_priorities = []
         for criterion in self.criteria:
             matrix = aggregated_matrices[criterion]
-            norm_matrix = matrix / matrix.sum(axis=0)  
-            weights = norm_matrix.mean(axis=1)
-            criterion_weights.append(weights)
+            if np.allclose(matrix, 1): 
+                weights = np.ones(len(self.alternatives)) / len(self.alternatives) 
+            else:
+                column_sums = matrix.sum(axis=0)
+                column_sums[column_sums == 0] = 1
+                norm_matrix = matrix / column_sums
+                weights = norm_matrix.mean(axis=1)
             local_priorities.append(weights)
 
         local_priorities = np.array(local_priorities).T
-        weights = np.ones(len(self.criteria)) / len(self.criteria) 
+        weights = np.ones(len(self.criteria)) / len(self.criteria)  
 
-        normalized_matrix = local_priorities / np.sqrt((local_priorities**2).sum(axis=0))
+        denominator = np.sqrt((local_priorities**2).sum(axis=0))
+        denominator[denominator == 0] = 1
+        normalized_matrix = local_priorities / denominator
 
         weighted_matrix = normalized_matrix * weights
 
-        ideal_solution = weighted_matrix.max(axis=0) 
+        ideal_solution = weighted_matrix.max(axis=0)
         anti_ideal_solution = weighted_matrix.min(axis=0)
 
         distance_to_ideal = np.sqrt(((weighted_matrix - ideal_solution)**2).sum(axis=1))
         distance_to_anti_ideal = np.sqrt(((weighted_matrix - anti_ideal_solution)**2).sum(axis=1))
 
-        closeness_coefficient = distance_to_anti_ideal / (distance_to_ideal + distance_to_anti_ideal)
+        total_distance = distance_to_ideal + distance_to_anti_ideal
+        total_distance[total_distance == 0] = 1
+        closeness_coefficient = distance_to_anti_ideal / total_distance
 
-        final_ranking = sorted([(self.alternatives[i], closeness) for i, closeness in enumerate(closeness_coefficient)], key=lambda x: x[1], reverse=True)
+        final_ranking = sorted(
+            [(self.alternatives[i], closeness) for i, closeness in enumerate(closeness_coefficient)],
+            key=lambda x: x[1],
+            reverse=True
+        )
 
         return final_ranking
-    
+
 
     def calculate_final_ranking_consistency_adjusted(self):
         aggregated_matrices = {}
@@ -176,10 +239,12 @@ class AHPModel:
             for j in range(n):
                 if np.isnan(filled_matrix[i, j]): 
                     for k in range(n):
-                        if not np.isnan(filled_matrix[i, k]) and not np.isnan(filled_matrix[k, j]):
+                        if not np.isnan(filled_matrix[i, k]) and not np.isnan(filled_matrix[k, j]) and k != i and k != j:
                             filled_matrix[i, j] = filled_matrix[i, k] * filled_matrix[k, j]
+                            filled_matrix[j, i] = 1 / filled_matrix[i, j]
                             break
                     if np.isnan(filled_matrix[i, j]):
                         filled_matrix[i, j] = 1.0
+                        filled_matrix[j, i] = 1.0
         np.fill_diagonal(filled_matrix, 1.0)
         return filled_matrix
