@@ -19,6 +19,7 @@ class AHPModel:
     def add_expert(self, expert_name):
         if expert_name not in self.experts:
             self.experts.append(expert_name)
+            self.expert_matrices[expert_name] = {}
 
     def add_expert_matrix(self, expert_name, criterion, matrix):
         if criterion not in self.criteria:
@@ -27,8 +28,6 @@ class AHPModel:
         if expert_name not in self.experts:
             print(f"Expert '{expert_name}' not found.")
             return
-        
-        self.expert_matrices[expert_name] = {}
 
         matrix = np.array(matrix)
         n = matrix.shape[0]

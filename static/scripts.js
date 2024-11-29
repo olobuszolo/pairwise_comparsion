@@ -92,17 +92,11 @@ function enableReciprocalUpdates() {
             const row = parseInt(this.dataset.row);
             const col = parseInt(this.dataset.col);
 
-            // Pobierz wybraną etykietę
             const selectedLabel = this.options[this.selectedIndex].text;
-
-            // Znajdź odpowiadającą etykietę odwrotności
             const reciprocalLabel = labelToReciprocal[selectedLabel];
-
-            // Znajdź pole po przeciwnej stronie przekątnej
             const reciprocalInput = document.querySelector(`.matrix-input[data-row="${col}"][data-col="${row}"]`);
 
             if (reciprocalInput) {
-                // Znajdź opcję z odpowiadającą etykietą
                 const optionToSelect = Array.from(reciprocalInput.options).find(
                     option => option.text === reciprocalLabel
                 );
@@ -165,7 +159,8 @@ function generateMatrixInput(numAlternatives, alternativesNames) {
                     values.sort((a, b) => b - a); 
 
                     values.forEach(item => {
-                        tableHtml += `<option value="${item.value.toFixed(2)}">${item.label}</option>`;
+                        const selected = item.value === 1 ? 'selected' : '';
+                        tableHtml += `<option value="${item.value.toFixed(2)}" ${selected}>${item.label}</option>`;
                     });
 
                     tableHtml += '</select></td>';
