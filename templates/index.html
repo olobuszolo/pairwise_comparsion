@@ -92,46 +92,103 @@
             }
         });
     }
+function enableReciprocalUpdates() {
+    const inputs = document.querySelectorAll(".matrix-input");
+    inputs.forEach((input) => {
+        input.addEventListener("change", function () {
+            const row = parseInt(this.dataset.row, 10);
+            const col = parseInt(this.dataset.col, 10);
+            const value = parseFloat(this.value);
 
-    function generateMatrixInput(numAlternatives) {
-        const container = $('#matrixContainer');
-        container.empty();
+            const reciprocalInput = document.querySelector(
+                `.matrix-input[data-row="${col}"][data-col="${row}"]`
+            );
 
-        if (numAlternatives > 0) {
-            let tableHtml = '<table class="table table-bordered">';
+            if (reciprocalInput) {
+                if (value === 0) {
+                    reciprocalInput.value = "0";
+                } else {
+                    const reciprocalMap = {
+                        "9.00": "0.11",
+                        "8.00": "0.13",
+                        "7.00": "0.14",
+                        "6.00": "0.17",
+                        "5.00": "0.20",
+                        "4.00": "0.25",
+                        "3.00": "0.33",
+                        "2.00": "0.50",
+                        "1.00": "1.00",
+                        "0.50": "2.00",
+                        "0.33": "3.00",
+                        "0.25": "4.00",
+                        "0.20": "5.00",
+                        "0.17": "6.00",
+                        "0.14": "7.00",
+                        "0.13": "8.00",
+                        "0.11": "9.00",
+                    };
 
-            for (let i = 0; i < numAlternatives; i++) {
-                tableHtml += '<tr>';
-                for (let j = 0; j < numAlternatives; j++) {
-                    if (i === j) {
-                        tableHtml += `<td><input type="number" class="form-control" value="1" readonly></td>`;
-                    } else {
-                        tableHtml += `<td><select class="form-control matrix-input" data-row="${i}" data-col="${j}">`;
-
-
-                        const values = [9, 8, 7, 6, 5, 4, 3, 2, 1.0, 1 / 2, 1 / 3, 1 / 4, 1 / 5, 1 / 6, 1 / 7, 1 / 8, 1 / 9, 0];
-                        values.sort((a, b) => b - a); 
-
-                        values.forEach(value => {
-                            if (value === 0) {
-                                tableHtml += `<option value="${value.toFixed(2)}" selected>${value.toFixed(2)}</option>`;
-                            } else {
-                                tableHtml += `<option value="${value.toFixed(2)}">${value.toFixed(2)}</option>`;
-                            }
-                        });
-
-                        tableHtml += '</select></td>';
-                    }
+                    reciprocalInput.value =
+                        reciprocalMap[value.toFixed(2)];
                 }
-                tableHtml += '</tr>';
             }
+        });
+    });
+}
 
-            tableHtml += '</table>';
-            container.html(tableHtml);
-        } else {
-            container.html('<p>No alternatives available. Please add alternatives first.</p>');
-        }
+function generateMatrixInput(numAlternatives) {
+    const container = $('#matrixContainer');
+    container.empty();
+
+    if (numAlternatives > 0) {
+        $.ajax({
+            url: '/get_alternatives',
+            type: 'GET',
+            success: function(response) {
+                const alternatives = response.alternatives;
+
+                let tableHtml = '<table class="table table-bordered">';
+                tableHtml += '<thead><tr><th></th>';
+
+                alternatives.forEach((alt) => {
+                    tableHtml += `<th>${alt}</th>`;
+                });
+
+                tableHtml += '</tr></thead><tbody>';
+
+                alternatives.forEach((rowAlt, i) => {
+                    tableHtml += `<tr><td><strong>${rowAlt}</strong></td>`;
+                    for (let j = 0; j < numAlternatives; j++) {
+                        if (i === j) {
+                            tableHtml += `<td><input type="number" class="form-control" value="1" readonly></td>`;
+                        } else {
+                            tableHtml += `<td><select class="form-control matrix-input" data-row="${i}" data-col="${j}">`;
+
+                            const values = [9, 8, 7, 6, 5, 4, 3, 2, 1.0, 1 / 2, 1 / 3, 1 / 4, 1 / 5, 1 / 6, 1 / 7, 1 / 8, 1 / 9, 0];
+                            values.forEach((value) => {
+                                tableHtml += `<option value="${value.toFixed(2)}">${value.toFixed(2)}</option>`;
+                            });
+
+                            tableHtml += '</select></td>';
+                        }
+                    }
+                    tableHtml += '</tr>';
+                });
+
+                tableHtml += '</tbody></table>';
+                container.html(tableHtml);
+
+                enableReciprocalUpdates();
+            },
+            error: function() {
+                alert('Failed to load alternatives.');
+            }
+        });
+    } else {
+        container.html('<p>No alternatives available. Please add alternatives first.</p>');
     }
+}
+
 
 
     function addAlternative() {
@@ -174,9 +231,9 @@
         const criterion = $('#criterion').val();
         let numAlternatives = $('#matrixContainer table tr').length;
         let matrix = [];
-        for (let i = 0; i < numAlternatives; i++) {
+        for (let i = 0; i < numAlternatives - 1; i++) {
             let row = [];
-            for (let j = 0; j < numAlternatives; j++) {
+            for (let j = 0; j < numAlternatives - 1; j++) {
                 if (i === j) {
                     row.push(1);
                 } else {
