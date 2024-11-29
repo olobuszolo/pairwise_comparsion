@@ -40,7 +40,7 @@ def add_expert_matrix():
     if expert_name and criterion and matrix:
         try:
             matrix_np = np.array(matrix, dtype=np.float64)
-            matrix_np[matrix_np == 0] = np.nan  # braki sa oznaczone jako 0
+            matrix_np[matrix_np == 0] = 0  # braki sa oznaczone jako 0 ale sa uzupelniane
             ahp.add_expert_matrix(expert_name, criterion, matrix_np)
             return jsonify({'message': 'Expert matrix added successfully (incomplete matrix handled)'}), 200
         except Exception as e:
@@ -179,6 +179,13 @@ def calculate_all_rankings():
             },
             'inconsistency_indices': inconsistency_indices
         }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/get_alternatives', methods=['GET'])
+def get_alternatives():
+    try:
+        return jsonify({'alternatives': ahp.alternatives}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
