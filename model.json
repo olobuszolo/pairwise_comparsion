@@ -12,6 +12,11 @@
         "Criterion 3",
         "Criterion 4"
     ],
+    "experts": [
+        "Expert 1",
+        "Expert 2",
+        "Expert 3"
+    ],
     "expert_matrices": {
         "Expert 1": {
             "Criterion 1": [

@@ -5,20 +5,30 @@ class AHPModel:
     def __init__(self):
         self.alternatives = []
         self.criteria = []
+        self.experts = []
         self.expert_matrices = {}
 
     def add_alternative(self, alternative_name):
-        self.alternatives.append(alternative_name)
+        if alternative_name not in self.alternatives:
+            self.alternatives.append(alternative_name)
 
     def add_criterion(self, criterion_name):
-        self.criteria.append(criterion_name)
+        if criterion_name not in self.criteria:
+            self.criteria.append(criterion_name)
+
+    def add_expert(self, expert_name):
+        if expert_name not in self.experts:
+            self.experts.append(expert_name)
 
     def add_expert_matrix(self, expert_name, criterion, matrix):
         if criterion not in self.criteria:
             print(f"Criterion '{criterion}' not found.")
             return
-        if expert_name not in self.expert_matrices:
-            self.expert_matrices[expert_name] = {}
+        if expert_name not in self.experts:
+            print(f"Expert '{expert_name}' not found.")
+            return
+        
+        self.expert_matrices[expert_name] = {}
 
         matrix = np.array(matrix)
         n = matrix.shape[0]
@@ -69,7 +79,6 @@ class AHPModel:
                             matrix[j, i] = 9
 
         self.expert_matrices[expert_name][criterion] = matrix
-
 
     def calculate_inconsistency_index(self, matrix):
         eigval, _ = np.linalg.eig(matrix)
@@ -124,7 +133,6 @@ class AHPModel:
             key=lambda x: x[1],
             reverse=True
         )
-
         return final_ranking
 
 
@@ -158,7 +166,7 @@ class AHPModel:
         for i, weights in enumerate(criterion_weights):
             final_scores += weights
         final_ranking = final_scores / len(self.criteria)
-
+        
         return sorted([(self.alternatives[i], score) for i, score in enumerate(final_ranking)], key=lambda x: x[1], reverse=True)
 
 
@@ -179,19 +187,7 @@ class AHPModel:
         for i, weights in enumerate(criterion_weights):
             final_scores += weights
         final_ranking = final_scores / len(self.criteria)
-
         return sorted([(self.alternatives[i], score) for i, score in enumerate(final_ranking)], key=lambda x: x[1], reverse=True)
-
-    def save_to_file(self, filename):
-        data = {
-            'alternatives': self.alternatives,
-            'criteria': self.criteria,
-            'expert_matrices': self.expert_matrices
-        }
-        data = self._convert_ndarrays_to_lists(data)
-        
-        with open(filename, 'w') as file:
-            json.dump(data, file, indent=4)
 
     def _convert_ndarrays_to_lists(self, obj):
         if isinstance(obj, np.ndarray):
@@ -206,6 +202,7 @@ class AHPModel:
     def load_from_file(self, data):
         self.alternatives = data['alternatives']
         self.criteria = data['criteria']
+        self.experts = data['experts']
         self.expert_matrices = data.get("expert_matrices", {})
         for expert in self.expert_matrices:
             for criterion in self.expert_matrices[expert]:
@@ -214,6 +211,7 @@ class AHPModel:
     def clear_model(self):
         self.alternatives = []
         self.criteria = []
+        self.experts = []
         self.expert_matrices = {}
         
     def get_inconsistency_indices(self):
@@ -225,11 +223,17 @@ class AHPModel:
                 inconsistency_indices[expert][criterion] = self.calculate_inconsistency_index(np.array(matrix))
         return inconsistency_indices
     
+    def get_experts(self):
+        return self.experts
+
     def get_criteria(self):
         return self.criteria
     
     def get_number_of_alternatives(self):
         return len(self.alternatives)
+    
+    def get_alternatives(self):
+        return self.alternatives
     
     def fill_missing_values(self, matrix):
         n = matrix.shape[0]

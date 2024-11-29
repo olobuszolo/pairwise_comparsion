@@ -30,6 +30,14 @@ def add_criterion():
         return jsonify({'message': 'Criterion added successfully'}), 200
     return jsonify({'error': 'No criterion name provided'}), 400
 
+@app.route('/add_expert', methods=['POST'])
+def add_expert():
+    data = request.json
+    expert_name = data.get('expert_name')
+    if expert_name:
+        ahp.add_expert(expert_name)
+        return jsonify({'message': 'Expert added successfully'}), 200
+    return jsonify({'error': 'No expert name provided'}), 400
 
 @app.route('/add_expert_matrix', methods=['POST'])
 def add_expert_matrix():
@@ -40,7 +48,7 @@ def add_expert_matrix():
     if expert_name and criterion and matrix:
         try:
             matrix_np = np.array(matrix, dtype=np.float64)
-            matrix_np[matrix_np == 0] = 0  # braki sa oznaczone jako 0 ale sa uzupelniane
+            matrix_np[matrix_np == 0] = np.nan  # braki sa oznaczone jako 0
             ahp.add_expert_matrix(expert_name, criterion, matrix_np)
             return jsonify({'message': 'Expert matrix added successfully (incomplete matrix handled)'}), 200
         except Exception as e:
@@ -98,6 +106,7 @@ def download_model():
         data = {
             'alternatives': ahp.alternatives,
             'criteria': ahp.criteria,
+            'experts': ahp.experts,
             'expert_matrices': {
                 expert: {
                     criterion: matrix.tolist()
@@ -145,6 +154,13 @@ def clear_model():
     ahp.clear_model()
     return jsonify({'message': 'Model cleared successfully'}), 200
 
+@app.route('/get_experts', methods=['GET'])
+def get_experts():
+    try:
+        experts = ahp.get_experts()
+        return jsonify({'experts': experts}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/get_criteria', methods=['GET'])
 def get_criteria():
@@ -158,7 +174,12 @@ def get_criteria():
 def get_number_of_alternatives():
     try:
         num_alternatives = ahp.get_number_of_alternatives()
-        return jsonify({'number_of_alternatives': num_alternatives}), 200
+        names_alternatives = ahp.get_alternatives()
+
+        return jsonify({
+            'number_of_alternatives': num_alternatives,
+            'alternative_names': names_alternatives
+            }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
@@ -180,15 +201,18 @@ def calculate_all_rankings():
             'inconsistency_indices': inconsistency_indices
         }), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
-    
-@app.route('/get_alternatives', methods=['GET'])
-def get_alternatives():
-    try:
-        return jsonify({'alternatives': ahp.alternatives}), 200
-    except Exception as e:
+        app.logger.error(f"Error in calculate_all_rankings: {str(e)}")
         return jsonify({'error': str(e)}), 400
 
+@app.route('/get_expert_matrix', methods=['GET'])
+def get_expert_matrix():
+    expert_name = request.args.get('expert_name')
+    criterion = request.args.get('criterion')
+    try:
+        matrix = ahp.expert_matrices[expert_name][criterion]
+        return jsonify({'matrix': matrix.tolist()}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
