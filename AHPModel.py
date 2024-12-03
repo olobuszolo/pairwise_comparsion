@@ -234,20 +234,30 @@ class AHPModel:
     def get_alternatives(self):
         return self.alternatives
     
-    def fill_missing_values(self, matrix):
+    def fill_missing_values(self, matrix): #using koczkodaj method
         n = matrix.shape[0]
         filled_matrix = matrix.copy()
 
         for i in range(n):
             for j in range(n):
-                if np.isnan(filled_matrix[i, j]): 
+                if np.isnan(filled_matrix[i, j]):
+                    candidates = []
                     for k in range(n):
-                        if not np.isnan(filled_matrix[i, k]) and not np.isnan(filled_matrix[k, j]) and k != i and k != j:
-                            filled_matrix[i, j] = filled_matrix[i, k] * filled_matrix[k, j]
-                            filled_matrix[j, i] = 1 / filled_matrix[i, j]
-                            break
-                    if np.isnan(filled_matrix[i, j]):
+                        if (
+                            not np.isnan(filled_matrix[i, k]) and
+                            not np.isnan(filled_matrix[k, j]) and
+                            k != i and k != j
+                        ):
+                            candidate_value = filled_matrix[i, k] * filled_matrix[k, j]
+                            candidates.append(candidate_value)
+
+                    if candidates:
+                        filled_matrix[i, j] = np.mean(candidates)
+                        filled_matrix[j, i] = 1 / filled_matrix[i, j]
+                    else:
                         filled_matrix[i, j] = 1.0
                         filled_matrix[j, i] = 1.0
+
         np.fill_diagonal(filled_matrix, 1.0)
+
         return filled_matrix
