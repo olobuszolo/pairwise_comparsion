@@ -72,7 +72,7 @@ class AHPModel:
                             matrix[j, i] = 6
                         elif matrix[i, j] == 0.14:
                             matrix[j, i] = 7
-                        elif matrix[i, j] == 0.13:
+                        elif matrix[i, j] == 0.12:
                             matrix[j, i] = 8
                         elif matrix[i, j] == 0.11:
                             matrix[j, i] = 9
@@ -84,7 +84,7 @@ class AHPModel:
         max_eigval = max(eigval.real)
         n = matrix.shape[0]
         ci = (max_eigval - n) / (n - 1)
-        return ci
+        return abs(ci)
     
     def calculate_final_ranking_topsis(self):
         aggregated_matrices = {}

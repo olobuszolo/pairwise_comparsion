@@ -2,6 +2,7 @@ $(document).ready(function() {
     loadExperts();
     loadCriteria();
     loadNumberOfAlternatives();
+    loadAllExpertMatrices();
 });
 
 function loadExperts() {
@@ -258,6 +259,7 @@ function addExpertMatrix() {
         data: JSON.stringify({ expert_name: expert, criterion: criterion, matrix: matrix }),
         success: function(response) {
             alert(response.message);
+            loadAllExpertMatrices();
         },
         error: function(response) {
             alert(response.responseJSON.error);
@@ -329,6 +331,7 @@ function uploadModel() {
             loadExperts();
             loadCriteria();
             loadNumberOfAlternatives();
+            loadAllExpertMatrices();
         },
         error: function(response) {
             alert(response.responseJSON.error);
@@ -446,4 +449,47 @@ $.ajax({
         alert('Failed to calculate rankings.');
     }
 });
+}
+
+function loadAllExpertMatrices() {
+    $.ajax({
+        url: '/get_all_expert_matrices',
+        type: 'GET',
+        success: function(response) {
+            const container = $('#allExpertMatrices');
+            container.empty();
+
+            if (response.expert_matrices) {
+                for (const criterion of Object.keys(response.expert_matrices[Object.keys(response.expert_matrices)[0]])) {
+                    let criterionHTML = `<h4>Criterion: ${criterion}</h4><div class="row">`;
+
+                    for (const [expert, criteria] of Object.entries(response.expert_matrices)) {
+                        const matrix = criteria[criterion];
+                        if (matrix) {
+                            let matrixHTML = `<div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+                                <h5>Expert: ${expert}</h5>
+                                <table class="table table-bordered table-sm">
+                                    ${matrix.map(row => `
+                                        <tr>
+                                            ${row.map(value => `<td>${value.toFixed(2)}</td>`).join('')}
+                                        </tr>
+                                    `).join('')}
+                                </table>
+                            </div>`;
+                            criterionHTML += matrixHTML;
+                        }
+                    }
+
+                    criterionHTML += '</div>';
+                    container.append(criterionHTML);
+                }
+            } else {
+                container.html('<p>No expert matrices available.</p>');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+            $('#allExpertMatrices').html('<p>Error retrieving all expert matrices.</p>');
+        }
+    });
 }

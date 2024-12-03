@@ -204,15 +204,20 @@ def calculate_all_rankings():
         app.logger.error(f"Error in calculate_all_rankings: {str(e)}")
         return jsonify({'error': str(e)}), 400
 
-@app.route('/get_expert_matrix', methods=['GET'])
-def get_expert_matrix():
-    expert_name = request.args.get('expert_name')
-    criterion = request.args.get('criterion')
+@app.route('/get_all_expert_matrices', methods=['GET'])
+def get_all_expert_matrices():
     try:
-        matrix = ahp.expert_matrices[expert_name][criterion]
-        return jsonify({'matrix': matrix.tolist()}), 200
+        expert_matrices = {
+            expert: {
+                criterion: matrix.tolist()
+                for criterion, matrix in matrices.items()
+            }
+            for expert, matrices in ahp.expert_matrices.items()
+        }
+        return jsonify({'expert_matrices': expert_matrices}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
 
 if __name__ == '__main__':
     app.run(debug=True)
