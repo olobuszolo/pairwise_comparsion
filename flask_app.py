@@ -56,20 +56,35 @@ def add_expert_matrix():
     return jsonify({'error': 'Missing data for expert name, criterion or matrix'}), 400
 
 
+# @app.route('/calculate_results', methods=['GET'])
+# def calculate_results():
+#     try:
+#         ranking_topsis = ahp.calculate_final_ranking_topsis()
+#         ranking_list = [{'alternative': alternative, 'score': score} for alternative, score in ranking_topsis]
+
+#         inconsistency_indices = ahp.get_inconsistency_indices()
+
+#         return jsonify({
+#             'ranking': ranking_list,
+#             'inconsistency_indices': inconsistency_indices
+#         }), 200
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 400
+
 @app.route('/calculate_results', methods=['GET'])
 def calculate_results():
     try:
+        missing_criteria = ahp.get_missing_criteria()
         ranking_topsis = ahp.calculate_final_ranking_topsis()
         ranking_list = [{'alternative': alternative, 'score': score} for alternative, score in ranking_topsis]
 
-        inconsistency_indices = ahp.get_inconsistency_indices()
-
         return jsonify({
             'ranking': ranking_list,
-            'inconsistency_indices': inconsistency_indices
+            'missing_criteria': missing_criteria
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
 
 
 @app.route('/calculate_final_ranking_consistency_adjusted', methods=['GET'])
@@ -183,6 +198,27 @@ def get_number_of_alternatives():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+# @app.route('/calculate_all_rankings', methods=['GET'])
+# def calculate_all_rankings():
+#     try:
+#         ranking_topsis = ahp.calculate_final_ranking_topsis()
+#         ranking_consistency_adjusted = ahp.calculate_final_ranking_consistency_adjusted()
+#         ranking_basic = ahp.calculate_final_ranking_basic()
+
+#         inconsistency_indices = ahp.get_inconsistency_indices()
+
+#         return jsonify({
+#             'rankings': {
+#                 'TOPSIS': [{'alternative': alt, 'score': score} for alt, score in ranking_topsis],
+#                 'Consistency Adjusted': [{'alternative': alt, 'score': score} for alt, score in ranking_consistency_adjusted],
+#                 'Basic': [{'alternative': alt, 'score': score} for alt, score in ranking_basic]
+#             },
+#             'inconsistency_indices': inconsistency_indices
+#         }), 200
+#     except Exception as e:
+#         app.logger.error(f"Error in calculate_all_rankings: {str(e)}")
+#         return jsonify({'error': str(e)}), 400
+
 @app.route('/calculate_all_rankings', methods=['GET'])
 def calculate_all_rankings():
     try:
@@ -191,6 +227,7 @@ def calculate_all_rankings():
         ranking_basic = ahp.calculate_final_ranking_basic()
 
         inconsistency_indices = ahp.get_inconsistency_indices()
+        missing_criteria = ahp.get_missing_criteria()
 
         return jsonify({
             'rankings': {
@@ -198,11 +235,13 @@ def calculate_all_rankings():
                 'Consistency Adjusted': [{'alternative': alt, 'score': score} for alt, score in ranking_consistency_adjusted],
                 'Basic': [{'alternative': alt, 'score': score} for alt, score in ranking_basic]
             },
-            'inconsistency_indices': inconsistency_indices
+            'inconsistency_indices': inconsistency_indices,
+            'missing_criteria': missing_criteria
         }), 200
     except Exception as e:
         app.logger.error(f"Error in calculate_all_rankings: {str(e)}")
         return jsonify({'error': str(e)}), 400
+
 
 @app.route('/get_all_expert_matrices', methods=['GET'])
 def get_all_expert_matrices():

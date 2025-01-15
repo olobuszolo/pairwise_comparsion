@@ -260,3 +260,9 @@ class AHPModel:
         np.fill_diagonal(filled_matrix, 1.0)
 
         return filled_matrix
+
+    def get_missing_criteria(self):
+        missing = {}
+        for expert in self.experts:
+            missing[expert] = [criterion for criterion in self.criteria if criterion not in self.expert_matrices.get(expert, {})]
+        return {expert: criteria for expert, criteria in missing.items() if criteria}

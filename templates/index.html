@@ -55,8 +55,64 @@
     <div class="mt-4">
         <h3>Calculate All Rankings</h3>
         <button class="btn btn-success" onclick="calculateAllRankings()">Calculate Rankings</button>
+        <div id="missingCriteriaResults" class="mt-3"></div>
         <div id="rankingResults" class="mt-3"></div>
+        <div id="inconsistencyResults" class="mt-3"></div>
     </div>
+    
+    <script>
+        function calculateAllRankings() {
+            $.get('/calculate_all_rankings', function(data) {
+                const missingCriteria = data.missing_criteria;
+                let missingResults = '<h4>Missing Criteria</h4>';
+                if (Object.keys(missingCriteria).length > 0) {
+                    missingResults += '<ul class="list-group">';
+                    for (const expert in missingCriteria) {
+                        missingResults += `<li class="list-group-item">${expert} is missing: <strong>${missingCriteria[expert].join(', ')}</strong></li>`;
+                    }
+                    missingResults += '</ul>';
+                } else {
+                    missingResults += '<p>All experts have filled all criteria.</p>';
+                }
+                $('#missingCriteriaResults').html(missingResults);
+
+                const rankings = data.rankings;
+                let rankingResults = '<h4>Rankings</h4>';
+                rankingResults += '<ul class="list-group">';
+                rankingResults += '<li class="list-group-item"><strong>TOPSIS</strong><ul>';
+                rankingResults += rankings.TOPSIS.map(r => `<li>${r.alternative}: <strong>${r.score.toFixed(2)}</strong></li>`).join('');
+                rankingResults += '</ul></li>';
+                rankingResults += '<li class="list-group-item"><strong>Consistency Adjusted</strong><ul>';
+                rankingResults += rankings['Consistency Adjusted'].map(r => `<li>${r.alternative}: <strong>${r.score.toFixed(2)}</strong></li>`).join('');
+                rankingResults += '</ul></li>';
+                rankingResults += '<li class="list-group-item"><strong>Basic</strong><ul>';
+                rankingResults += rankings.Basic.map(r => `<li>${r.alternative}: <strong>${r.score.toFixed(2)}</strong></li>`).join('');
+                rankingResults += '</ul></li>';
+                rankingResults += '</ul>';
+                $('#rankingResults').html(rankingResults);
+    
+                const inconsistencyIndices = data.inconsistency_indices;
+                let inconsistencyResults = '<h4>Inconsistency Indices</h4>';
+                inconsistencyResults += '<ul class="list-group">';
+                for (const expert in inconsistencyIndices) {
+                    inconsistencyResults += `<li class="list-group-item"><strong>${expert}</strong><ul>`;
+                    for (const criterion in inconsistencyIndices[expert]) {
+                        inconsistencyResults += `<li>${criterion}: <strong>${inconsistencyIndices[expert][criterion].toFixed(4)}</strong></li>`;
+                    }
+                    inconsistencyResults += '</ul></li>';
+                }
+                inconsistencyResults += '</ul>';
+                $('#inconsistencyResults').html(inconsistencyResults);
+   
+            }).fail(function(error) {
+                $('#rankingResults').html('<p>Error fetching data.</p>');
+                $('#inconsistencyResults').html('');
+                $('#missingCriteriaResults').html('');
+            });
+        }
+    </script>
+    
+    
 </div>
 </body>
 </html>
