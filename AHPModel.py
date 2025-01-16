@@ -32,7 +32,6 @@ class AHPModel:
         matrix = np.array(matrix)
         n = matrix.shape[0]
 
-        # Zachowanie wartości 0
         matrix[matrix == 0] = 0
         matrix = self.fill_missing_values(matrix)
 
@@ -88,7 +87,6 @@ class AHPModel:
 
 
     def calculate_final_ranking_topsis(self):
-        # Krok 1: Tworzenie macierzy decyzyjnej
         aggregated_matrices = {}
         for criterion in self.criteria:
             matrices = [
@@ -97,34 +95,28 @@ class AHPModel:
                 if criterion in self.expert_matrices[expert]
             ]
             aggregated_matrices[criterion] = sum(matrices) / len(matrices)
-        # Krok 2: Normalizacja macierzy
         normalized_matrices = {}
         for criterion, matrix in aggregated_matrices.items():
             column_sums = np.sqrt((matrix**2).sum(axis=0))
             column_sums[column_sums == 0] = 1
             normalized_matrices[criterion] = matrix / column_sums
 
-        # Krok 3: Macierz wazona
         weights = np.ones(len(self.criteria)) / len(self.criteria)
         weighted_matrices = {}
         for criterion, norm_matrix in normalized_matrices.items():
             weighted_matrices[criterion] = norm_matrix * weights[self.criteria.index(criterion)]
         weighted_matrix = sum(weighted_matrices.values())
 
-        # Krok 4: Wyznaczenie rozwiazan idealnych i anty-idealnych
         ideal_solution = weighted_matrix.max(axis=0) 
         anti_ideal_solution = weighted_matrix.min(axis=0)  
 
-        # Krok 5: Obliczanie odleglosci od rozwiazan idealnych i anty-idealnych
         distance_to_ideal = np.sqrt(((weighted_matrix - ideal_solution)**2).sum(axis=1))
         distance_to_anti_ideal = np.sqrt(((weighted_matrix - anti_ideal_solution)**2).sum(axis=1))
 
-        # Krok 6: Obliczanie wspolczynnika bliskosci
         total_distance = distance_to_ideal + distance_to_anti_ideal
         total_distance[total_distance == 0] = 1 
         closeness_coefficient = distance_to_anti_ideal / total_distance
 
-        # Krok 7: Ranking
         final_ranking = sorted(
             [(self.alternatives[i], closeness) for i, closeness in enumerate(closeness_coefficient)],
             key=lambda x: x[1],

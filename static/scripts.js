@@ -389,66 +389,53 @@ function getInconsistencyIndices() {
 
 
 function calculateAllRankings() {
-$.ajax({
-    url: '/calculate_all_rankings',
-    type: 'GET',
-    success: function(response) {
-        let resultHTML = '';
-
-        if (response.inconsistency_indices) {
-            resultHTML += '<h4>Inconsistency Indices</h4>';
-            resultHTML += '<ul class="list-group">';
-            for (const [expert, criteria] of Object.entries(response.inconsistency_indices)) {
-                resultHTML += `<li class="list-group-item"><strong>Expert: ${expert}</strong>`;
-                resultHTML += '<ul>';
-                for (const [criterion, index] of Object.entries(criteria)) {
-                    resultHTML += `<li>Criterion: ${criterion}, Index: ${index.toFixed(2)}</li>`;
-                }
-                resultHTML += '</ul></li>';
+    $.get('/calculate_all_rankings', function(data) {
+        const missingCriteria = data.missing_criteria;
+        let missingResults = '<h4>Missing Criteria</h4>';
+        if (Object.keys(missingCriteria).length > 0) {
+            missingResults += '<ul class="list-group">';
+            for (const expert in missingCriteria) {
+                missingResults += `<li class="list-group-item">${expert} is missing: <strong>${missingCriteria[expert].join(', ')}</strong></li>`;
             }
-            resultHTML += '</ul>';
+            missingResults += '</ul>';
+        } else {
+            missingResults += '<p>All experts have filled all criteria.</p>';
         }
+        $('#missingCriteriaResults').html(missingResults);
 
-        if (response.rankings) {
-            for (const [method, rankings] of Object.entries(response.rankings)) {
-                resultHTML += `<h4>Final Ranking (${method})</h4>`;
-                resultHTML += '<ul class="list-group">';
-                rankings.forEach(item => {
-                    resultHTML += `<li class="list-group-item">${item.alternative}: ${item.score.toFixed(2)}</li>`;
-                });
-                resultHTML += '</ul>';
+        const rankings = data.rankings;
+        let rankingResults = '<h4>Rankings</h4>';
+        rankingResults += '<ul class="list-group">';
+        rankingResults += '<li class="list-group-item"><strong>TOPSIS</strong><ul>';
+        rankingResults += rankings.TOPSIS.map(r => `<li>${r.alternative}: <strong>${r.score.toFixed(2)}</strong></li>`).join('');
+        rankingResults += '</ul></li>';
+        rankingResults += '<li class="list-group-item"><strong>Consistency Adjusted</strong><ul>';
+        rankingResults += rankings['Consistency Adjusted'].map(r => `<li>${r.alternative}: <strong>${r.score.toFixed(2)}</strong></li>`).join('');
+        rankingResults += '</ul></li>';
+        rankingResults += '<li class="list-group-item"><strong>Basic</strong><ul>';
+        rankingResults += rankings.Basic.map(r => `<li>${r.alternative}: <strong>${r.score.toFixed(2)}</strong></li>`).join('');
+        rankingResults += '</ul></li>';
+        rankingResults += '</ul>';
+        $('#rankingResults').html(rankingResults);
+
+        const inconsistencyIndices = data.inconsistency_indices;
+        let inconsistencyResults = '<h4>Inconsistency Indices</h4>';
+        inconsistencyResults += '<ul class="list-group">';
+        for (const expert in inconsistencyIndices) {
+            inconsistencyResults += `<li class="list-group-item"><strong>${expert}</strong><ul>`;
+            for (const criterion in inconsistencyIndices[expert]) {
+                inconsistencyResults += `<li>${criterion}: <strong>${inconsistencyIndices[expert][criterion].toFixed(4)}</strong></li>`;
             }
+            inconsistencyResults += '</ul></li>';
         }
+        inconsistencyResults += '</ul>';
+        $('#inconsistencyResults').html(inconsistencyResults);
 
-        if (response.matrices_with_labels) {
-            resultHTML += '<h4>Expert Matrices</h4>';
-            for (const [criterion, matrices] of Object.entries(response.matrices_with_labels)) {
-                resultHTML += `<h5>Criterion: ${criterion}</h5>`;
-                matrices.forEach(matrix => {
-                    resultHTML += '<table class="table table-bordered"><thead><tr><th></th>';
-                    const labels = Object.keys(matrix.values);
-                    labels.forEach(label => {
-                        resultHTML += `<th>${label}</th>`;
-                    });
-                    resultHTML += '</tr></thead><tbody>';
-                    Object.entries(matrix.values).forEach(([rowLabel, rowValues]) => {
-                        resultHTML += `<tr><td>${rowLabel}</td>`;
-                        Object.values(rowValues).forEach(value => {
-                            resultHTML += `<td>${value.toFixed(2)}</td>`;
-                        });
-                        resultHTML += '</tr>';
-                    });
-                    resultHTML += '</tbody></table>';
-                });
-            }
-        }
-
-        $('#rankingResults').html(resultHTML);
-    },
-    error: function() {
-        alert('Failed to calculate rankings.');
-    }
-});
+    }).fail(function(error) {
+        $('#rankingResults').html('<p>Error fetching data.</p>');
+        $('#inconsistencyResults').html('');
+        $('#missingCriteriaResults').html('');
+    });
 }
 
 function loadAllExpertMatrices() {
