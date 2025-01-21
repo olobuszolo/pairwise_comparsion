@@ -223,4 +223,4 @@ def get_all_expert_matrices():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0",port=22233)
