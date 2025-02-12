@@ -73,7 +73,7 @@ Aplikacja będzie dostępna pod adresem: http\://localhost:22233
 
 ## 👥 Autorzy
 
-📌 Aplikacja została stworzona jako projekt zespołowy z przedmiotu \*\*Metody i algorytmy podejmowania decyzji\*\* prowadzonego na AGH UST.
+📌 Aplikacja została stworzona jako projekt zespołowy z przedmiotu **Metody i algorytmy podejmowania decyzji** prowadzonego na AGH UST.
 
 ## 📜 Licencja
 
